@@ -8,5 +8,4 @@ class NotesViewModel : ViewModel() {
 
     var notes = mutableStateListOf<Note>()
         private set
-
 }
