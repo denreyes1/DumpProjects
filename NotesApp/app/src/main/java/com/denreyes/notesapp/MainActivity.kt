@@ -22,6 +22,8 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardColors
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -42,13 +44,21 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.denreyes.notesapp.data.Note
 import com.denreyes.notesapp.ui.theme.NotesAppTheme
 import com.denreyes.notesapp.viewmodel.NotesViewModel
+import com.google.android.material.chip.Chip
+import org.w3c.dom.Text
+import java.sql.Timestamp
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Date
 
 class MainActivity : ComponentActivity() {
 
-    private val viewModel = NotesViewModel()
+    val viewModel = NotesViewModel()
 
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -75,7 +85,7 @@ class MainActivity : ComponentActivity() {
                     }
                 ) { innerPadding ->
                     ContentBody(
-                        modifier = Modifier.padding(innerPadding)
+                        modifier = Modifier.padding(innerPadding).padding(horizontal = 12.dp)
                     )
                 }
             }
@@ -95,28 +105,60 @@ class MainActivity : ComponentActivity() {
                     label = { Text("Type note...") })
                 Spacer(modifier.width(8.dp))
                 Button(onClick = {
+                    var toastMsg = ""
                     if (string.isNotBlank()) {
-                        val noteEntry = Note(text = string)
-                        viewModel.notes.add(noteEntry)
-                        Toast.makeText(context, "Note added :)", Toast.LENGTH_LONG).show()
+                        viewModel.notes.add(Note(text = string))
+                        toastMsg = "New note added :)"
                         string = ""
+                    } else {
+                        toastMsg = "You cannot add an empty note."
                     }
+                    Toast.makeText(context, toastMsg, Toast.LENGTH_LONG).show()
                 }, modifier = Modifier.wrapContentWidth()) {
                     Text("Add Note")
                 }
             }
-            val notesList = viewModel.notes
-            if(notesList.isEmpty()) {
-                notesList.add(Note(text = "Test1 "))
-                notesList.add(Note(text = "Test 2"))
-                notesList.add(Note( text = "Test 3"))
+            if (viewModel.notes.isEmpty()) {
+                Column(modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center) {
+                    Text("Notes empty")
+                }
+            } else {
+                LazyColumn {
+                    items(viewModel.notes) {
+                        NoteItem(it.text, it.timestamp, it.id)
+                    }
+                }
             }
-            
-            LazyColumn() {
-                items(notesList){
-                    Column(modifier = Modifier.padding(bottom = 12.dp)) {
-                        Card {
-                            Text(text = it.text, modifier = Modifier.padding(12.dp))
+        }
+    }
+
+    @Composable
+    fun NoteItem(text: String, timestamp: Long, id: String) {
+        Column(modifier = Modifier
+            .padding(bottom = 12.dp)) {
+            Card {
+                Column(modifier = Modifier
+                    .padding(horizontal = 18.dp, vertical = 12.dp)
+                    .fillMaxWidth()) {
+                    Text(text = text)
+                    Row {
+                        Text(text = id, fontSize = 8.sp, color = Color.Gray, modifier = Modifier.weight(1f))
+                        Card(
+                            colors = CardDefaults.cardColors(
+                                containerColor = Color(0xFFB3E5FC),
+                                contentColor = Color(0xFF1976D2)
+                            )
+                        ) {
+                            Text(
+                                text = Instant.ofEpochMilli(timestamp)
+                                    .atZone(ZoneId.systemDefault()).format(
+                                        DateTimeFormatter.ofPattern("MMM dd, YYYY hh:mm a")
+                                    ),
+                                fontSize = 9.sp,
+                                modifier = Modifier.padding(horizontal = 12.dp)
+                            )
                         }
                     }
                 }
